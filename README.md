@@ -6,6 +6,9 @@ First, run the development server:
 
 ```bash
 npm install
+#
+npx prisma db seed (Pour insérer directement les informations de l'Admin dans la base de données)
+#
 npm run dev
 # or
 yarn dev
