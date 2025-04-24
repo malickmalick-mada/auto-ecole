@@ -1,0 +1,160 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  expires      DateTime
+  sessionToken String   @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  senderId  String
+  sender    User     @relation("SentMessages", fields: [senderId], references: [id])
+  chatId    String
+  chat      Chat     @relation(fields: [chatId], references: [id])
+}
+
+model Chat {
+  id        String    @id @default(cuid())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  messages  Message[]
+  users     User[]    @relation("UserChats")
+}
+
+model Course {
+  id              String           @id @default(cuid())
+  title           String
+  instructor      String
+  duration        String
+  level           String
+  description     String
+  videoUrl        String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  validationCodes ValidationCode[]
+}
+
+model ValidationCode {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  userId      String
+  courseId    String
+  isUsed      Boolean  @default(false)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+  course      Course   @relation(fields: [courseId], references: [id])
+
+  @@index([userId])
+  @@index([courseId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  content   String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model QuizSubmission {
+  id          String   @id @default(cuid())
+  userId      String
+  quizId      String
+  title       String
+  answers     Json
+  score       Int
+  submittedAt DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+// Update the User model to include the relation
+model User {
+  id              String           @id @default(cuid())
+  email           String           @unique
+  username        String           @unique
+  password        String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  role            Role             @default(USER)
+  sessions        Session[]
+  sentMessages    Message[]        @relation("SentMessages")
+  chats           Chat[]           @relation("UserChats")
+  validationCodes ValidationCode[]
+  notifications   Notification[]
+  quizAttempts    QuizAttempt[]
+  quizSubmissions QuizSubmission[]
+  testDrives      TestDrive[]
+}
+
+model Quiz {
+  id        String        @id @default(cuid())
+  title     String
+  questions Question[]
+  courseId  String
+  attempts  QuizAttempt[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model Question {
+  id            String   @id @default(cuid())
+  content       String
+  options       String[]
+  correctAnswer String
+  quizId        String
+  quiz          Quiz     @relation(fields: [quizId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model QuizAttempt {
+  id        String   @id @default(cuid())
+  score     Int
+  answers   Json
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  quizId    String
+  quiz      Quiz     @relation(fields: [quizId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TestDrive {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  date      DateTime
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+}
+
